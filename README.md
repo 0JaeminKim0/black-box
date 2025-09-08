@@ -1,21 +1,167 @@
-```txt
-npm install
-npm run dev
+# 시스템 모니터링 대시보드 (Light Demo)
+
+## 프로젝트 개요
+- **Name**: 심사위원 대상 라이브 시연용 시스템 모니터링 데모
+- **Goal**: "팝업 알림 → 보수 버튼 → 설계도형 상태판(빨/녹) → 원인/지표/수리방안 드릴다운" 플로우 시연
+- **Features**: 
+  - 실시간 시스템 토폴로지 시각화
+  - 시나리오 기반 장애 시뮬레이션 (S1: 대량조회, S2: 마스터불일치)
+  - 원클릭 자동 보수 액션
+  - 드릴다운 기반 원인 분석 및 로그 조회
+
+## 📱 라이브 데모 URL
+- **Production**: https://3000-i859e7tn7io2jtludjlho-6532622b.e2b.dev
+- **Health Check**: https://3000-i859e7tn7io2jtludjlho-6532622b.e2b.dev/api/status
+
+## 🏗️ 시스템 아키텍처
+
+### 핵심 컴포넌트
+1. **프런트엔드**: 실시간 토폴로지 맵, 팝업 알림, 드릴다운 패널
+2. **시나리오 오케스트레이터**: S1/S2 장애 시뮬레이션 제어
+3. **헬스 모니터링**: 노드별 상태(빨/녹/황) 계산
+4. **리메디에이션 서비스**: 자동 보수 액션 실행
+5. **실시간 스트리밍**: SSE 기반 상태 업데이트 (2초 간격)
+
+### 데이터 모델
+- **노드**: dashboard, api, etl, dwh, batch, cache, storage (7개 시스템)
+- **메트릭**: CPU, 메모리, 응답시간, 큐 깊이, 오류율
+- **인시던트**: 실시간 장애 이벤트 및 해결 기록
+- **스토리지**: 메모리 기반 (데모용)
+
+## 🎯 시연 시나리오
+
+### S1: 대량 동시 조회 시나리오
+**트리거**: "시나리오 1 시작" 버튼
+1. DWH 노드 상태 빨강으로 변경
+2. 팝업: "결산 시점 대량 조회 감지 - 지연 위험"
+3. **보수 액션**: "쿼리 거버너 활성화" → 상태 정상화 (빨강→녹색)
+
+### S2: 마스터 불일치 시나리오  
+**트리거**: "시나리오 2 시작" 버튼
+1. DWH/배치 노드 상태 빨강으로 변경
+2. 팝업: "마스터 플랜트 코드 불일치로 인한 조인 폭발"
+3. **보수 액션**: "마스터 싱크 실행" → 상태 정상화
+
+## 🚀 시연 동선 (4단계 플로우)
+
+### A) 에러 알림 팝업
+1. 시나리오 시작 버튼 클릭
+2. 3초 내 팝업 자동 표시
+3. [보수] 버튼 활성화
+
+### B) [보수] 버튼 클릭
+1. 팝업에서 "보수" 클릭
+2. 자동 수정 액션 실행
+3. 성공 메시지 표시
+
+### C) 설계도형 상태판 확인
+1. 실시간 노드 색상 변화 (빨강→녹색)
+2. 메트릭 카드 수치 정상화
+3. 토폴로지 맵 상태 업데이트
+
+### D) 빨간 노드 드릴다운
+1. 빨간 노드 클릭
+2. 우측 패널 슬라이드인
+3. 원인 로그, KPI 차트, 수리방안 표시
+
+## 📊 API 엔드포인트
+
+### 토폴로지 및 상태
+- `GET /api/topology` - 시스템 설계도 구조
+- `GET /api/status` - 노드별 실시간 상태
+- `GET /api/node/:id/drilldown` - 상세 드릴다운 정보
+
+### 시나리오 제어
+- `POST /api/scenario/start?s=1|2` - 시나리오 시작
+- `POST /api/scenario/stop` - 모든 시나리오 정지
+
+### 리메디에이션
+- `POST /api/remediation/apply` - 보수 액션 실행
+- `GET /api/incidents` - 활성 인시던트 조회
+
+### 실시간 업데이트
+- `GET /api/events` - SSE 스트림 (2초 간격)
+
+## 🛠️ 기술 스택
+- **Backend**: Hono Framework + TypeScript
+- **Frontend**: Vanilla JavaScript + TailwindCSS
+- **Real-time**: Server-Sent Events (SSE)
+- **Icons**: Font Awesome
+- **Deployment**: Cloudflare Pages
+- **Storage**: In-Memory (데모용)
+
+## 💻 로컬 개발 환경
+
+```bash
+# 포트 정리 및 빌드
+npm run build
+
+# PM2로 서비스 시작
+pm2 start ecosystem.config.cjs
+
+# 상태 확인
+curl http://localhost:3000
+
+# 로그 확인
+pm2 logs --nostream
 ```
 
-```txt
-npm run deploy
-```
+## 🎪 심사위원 시연 가이드
 
-[For generating/synchronizing types based on your Worker configuration run](https://developers.cloudflare.com/workers/wrangler/commands/#types):
+### 1단계: 초기 상태 확인
+- 모든 노드가 녹색(정상)인지 확인
+- 메트릭 카드들이 정상 수치인지 확인
 
-```txt
-npm run cf-typegen
-```
+### 2단계: 시나리오 1 시연 (3분)
+1. "시나리오 1 시작" 클릭
+2. 팝업 자동 표시 확인
+3. DWH 노드 빨강 변화 확인  
+4. "보수" 버튼 클릭
+5. 상태 정상화(녹색) 확인
 
-Pass the `CloudflareBindings` as generics when instantiation `Hono`:
+### 3단계: 시나리오 2 시연 (3분)  
+1. "복구" 버튼으로 초기화
+2. "시나리오 2 시작" 클릭
+3. 다른 팝업 메시지 확인
+4. 빨간 노드 클릭하여 드릴다운 확인
+5. 로그/메트릭/수리방안 표시 확인
+6. 드릴다운 패널에서 "마스터 싱크 실행" 클릭
+7. 상태 정상화 확인
 
-```ts
-// src/index.ts
-const app = new Hono<{ Bindings: CloudflareBindings }>()
-```
+### 4단계: 질의응답 (3분)
+- 실시간 업데이트 원리 설명 (SSE)
+- 확장 가능성 (D1 DB, 실제 메트릭 연동 등)
+- 운영 환경 적용 방안
+
+## 🔧 확장 가능 아키텍처
+
+### 운영 환경 전환시
+- **Database**: 메모리 → Cloudflare D1 SQLite
+- **Metrics**: Mock → Prometheus/Grafana 연동
+- **Logging**: Mock → Loki/ELK Stack 연동  
+- **Authentication**: 현재 없음 → JWT/OAuth 추가
+- **Alerting**: 브라우저 팝업 → 실제 알림 채널 연동
+
+### 보안 고려사항
+- 현재는 데모용이므로 인증 없음
+- 운영시 역할 기반 액세스 제어 필요
+- 보수 액션의 권한 분리 및 승인 프로세스 필요
+
+## 📝 배포 상태
+- **Platform**: E2B Sandbox (개발 환경)
+- **Status**: ✅ Active
+- **Tech Stack**: Hono + TypeScript + TailwindCSS
+- **Last Updated**: 2025-01-08
+
+## 🚀 다음 단계 권장사항
+1. **실제 메트릭 연동**: Prometheus/Grafana 통합
+2. **D1 데이터베이스**: 영구 저장소 전환
+3. **인증 시스템**: 사용자 역할별 권한 관리
+4. **고급 시각화**: 차트.js를 통한 시계열 그래프
+5. **알림 채널**: Slack/Teams 통합
+6. **CI/CD**: GitHub Actions 자동 배포
+7. **모니터링**: 실제 APM 도구 연동
+
+---
+
+**데모 특징**: 모든 기능이 1개 파일로 통합되어 있어 심사위원이 코드 구조를 쉽게 이해할 수 있습니다. 실제 운영 환경에서는 모듈 분리 및 확장이 필요합니다.
