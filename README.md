@@ -154,11 +154,13 @@
 - **Frontend**: Vanilla JavaScript + TailwindCSS
 - **Real-time**: Server-Sent Events (SSE)
 - **Icons**: Font Awesome
-- **Deployment**: Cloudflare Pages
+- **Deployment**: Railway (Node.js) + Cloudflare Pages 호환
+- **Runtime**: Node.js 18.x + tsx (TypeScript 실행)
 - **Storage**: In-Memory (데모용)
 
-## 💻 로컬 개발 환경
+## 💻 개발 환경
 
+### 🏠 로컬 개발 (Sandbox)
 ```bash
 # 포트 정리 및 빌드
 npm run build
@@ -172,6 +174,48 @@ curl http://localhost:3000
 # 로그 확인
 pm2 logs --nostream
 ```
+
+### 🚄 Railway 배포
+
+#### Railway 호환성 변경사항
+- **서버 엔트리포인트**: `server.js` 추가 (Node.js + tsx 기반)
+- **모듈 import 변경**: `'hono/cloudflare-workers'` → `'@hono/node-server/serve-static'`
+- **TypeScript 지원**: tsx 패키지로 .tsx 파일 직접 실행
+- **Railway 설정파일**: `railway.json`, `nixpacks.toml` 추가
+
+#### 로컬에서 Railway 호환 테스트
+```bash
+# 의존성 설치 (이미 완료됨)
+npm install @hono/node-server tsx
+
+# Railway 호환 서버 시작
+npm start
+
+# 테스트
+curl http://localhost:3000
+curl http://localhost:3000/ai-analysis
+curl http://localhost:3000/monitoring  
+curl http://localhost:3000/blackbox-analysis
+```
+
+#### Railway 배포 단계
+1. **GitHub 저장소 연결**: Railway에서 GitHub 저장소 선택
+2. **자동 배포 설정**: `railway.json`과 `nixpacks.toml`로 자동 설정
+3. **환경 변수**: Railway에서 `PORT` 환경변수 자동 설정됨
+4. **도메인**: Railway가 자동으로 `https://<app-name>.up.railway.app` 제공
+
+#### Railway 설정 파일들
+- **`server.js`**: Node.js 서버 엔트리포인트
+- **`railway.json`**: Railway 플랫폼 설정
+- **`nixpacks.toml`**: Nixpacks 빌드 설정 (Node.js 18.x)
+- **`package.json`**: 시작 스크립트 `"start": "tsx server.js"`
+
+#### 검증된 기능
+✅ 모든 4개 페이지 정상 작동  
+✅ API 엔드포인트 응답 (200 OK)  
+✅ 실시간 SSE 스트리밍  
+✅ 정적 파일 서빙  
+✅ TypeScript 지원
 
 ## 💡 AI 4-Layer 데모 핵심 특징
 
@@ -214,9 +258,10 @@ pm2 logs --nostream
 - 보수 액션의 권한 분리 및 승인 프로세스 필요
 
 ## 📝 배포 상태
-- **Platform**: E2B Sandbox (개발 환경)
-- **Status**: ✅ Active
-- **Tech Stack**: Hono + TypeScript + TailwindCSS
+- **Development**: E2B Sandbox - ✅ Active
+- **Production Ready**: Railway 호환 - ✅ 테스트 완료
+- **Tech Stack**: Hono + Node.js + TypeScript + TailwindCSS
+- **Railway Support**: server.js + tsx + nixpacks 설정 완료
 - **Last Updated**: 2025-01-08
 
 ## 🚀 다음 단계 권장사항

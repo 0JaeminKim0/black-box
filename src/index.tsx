@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import { serveStatic } from 'hono/cloudflare-workers'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { streamSSE } from 'hono/streaming'
 
 const app = new Hono()
@@ -10,6 +10,7 @@ app.use('/api/*', cors())
 
 // Serve static files from public directory  
 app.use('/static/*', serveStatic({ root: './public' }))
+app.use('/favicon.ico', serveStatic({ path: './public/favicon.ico' }))
 
 // In-memory data store (for demo purposes)
 let systemState = {
